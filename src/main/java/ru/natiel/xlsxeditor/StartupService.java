@@ -26,6 +26,7 @@ public class StartupService {
             "select imsi, brand_cd from k_schema.device_mst where imsi in (%s) " +
             "UNION all " +
             "select imsi, brand_cd from g_schema.device_mst where imsi in (%s)";
+    int imsiRowNum = 0;
 
     public void start() throws IOException {
         System.out.println(" Application START !!!!!!!!!!!!!!");
@@ -35,20 +36,20 @@ public class StartupService {
         String imsiList = getImsiList(mySheet);
 
         List<Map<String, Object>> maps = jdbcTemplate.queryForList(String.format(SCRIPT, imsiList, imsiList, imsiList));
+
+        fillXLSX(myWorkBook, maps);
+        System.out.println("Application FINISH !!!!!!!!!");
+    }
+
+    private void fillXLSX(XSSFWorkbook myWorkBook, List<Map<String, Object>> maps) throws IOException {
         Map<String, String> imsiMap = new HashMap<>();
         maps.forEach(x -> imsiMap.put(x.get("imsi").toString(), x.get("brand_cd").toString()));
 
-        fillXLSX(myWorkBook, imsiMap);
-        System.out.println("");
-
-    }
-
-    private void fillXLSX(XSSFWorkbook myWorkBook, Map<String, String> imsiMap) throws IOException {
         FileOutputStream os = new FileOutputStream(myFile);
         Iterator<Row> rowIterator = mySheet.iterator();
         while (rowIterator.hasNext()) {
             Row row = rowIterator.next();
-            Cell imsiCell = row.getCell(4);
+            Cell imsiCell = row.getCell(imsiRowNum);
             Cell brandCell = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
             brandCell.setCellValue(imsiMap.get(imsiCell.getStringCellValue()));
         }
@@ -60,8 +61,20 @@ public class StartupService {
         Iterator<Row> rowIterator = mySheet.iterator();
         while (rowIterator.hasNext()) {
             Row row = rowIterator.next();
-            Cell cell = row.getCell(4);
-            result.append("\'").append(cell.getStringCellValue()).append("\'");
+            if(row.getRowNum() == 0){
+                for (int i = 0; i <= row.getLastCellNum(); i++){
+                    if(row.getCell(i).getCellType() == Cell.CELL_TYPE_STRING &&
+                            row.getCell(i).getStringCellValue().equals("IMSI")){
+                        imsiRowNum = i;
+                        break;
+                    }
+                }
+            }
+            Cell cell = row.getCell(imsiRowNum);
+            int cellType = cell.getCellType();
+            String cellValue = cellType == 1 ?
+                    cell.getStringCellValue() : Double.toString(cell.getNumericCellValue());
+            result.append("\'").append(cellValue).append("\'");
             if(rowIterator.hasNext())
                 result.append(",");
         }
@@ -69,22 +82,9 @@ public class StartupService {
     }
 
     private XSSFWorkbook getXssfSheets() throws IOException {
-        myFile = new File("C:\\NATI\\projects\\xlsxeditor\\src\\main\\resources\\Summarised_SMS_usage_per_IMSI_(STCU).xlsx");
+        myFile = new File("C:\\NATI\\projects\\xlsxeditor\\src\\main\\resources\\input.xlsx");
         FileInputStream fis = new FileInputStream(myFile);
         return new XSSFWorkbook(fis);
     }
 
-    private class Line {
-        String imsi;
-        String brand;
-
-        public Line (String imsi, String brand){
-            this.imsi = imsi;
-            this.brand = brand;
-        }
-
-        public String getImsi() { return imsi; }
-
-        public String getBrand() { return brand; }
-    }
 }
