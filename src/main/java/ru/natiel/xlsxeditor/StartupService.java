@@ -31,34 +31,14 @@ public class StartupService {
     }
 
     public void start() throws IOException {
-        System.out.println("Application START !!!!!!!!!!!!!!");
         XSSFWorkbook myWorkBook = getXssfSheets();
 
         if(myWorkBook != null){
             mySheet = myWorkBook.getSheet("Data");
             String imsiList = getImsiList(mySheet);
-
             List<Map<String, Object>> maps = jdbcTemplate.queryForList(String.format(SCRIPT, imsiList, imsiList, imsiList));
-
             fillXLSX(myWorkBook, maps);
         }
-
-        System.out.println("Application FINISH !!!!!!!!!");
-    }
-
-    private void fillXLSX(XSSFWorkbook myWorkBook, List<Map<String, Object>> maps) throws IOException {
-        Map<String, String> imsiMap = new HashMap<>();
-        maps.forEach(x -> imsiMap.put(x.get("imsi").toString(), x.get("brand_cd").toString()));
-
-        FileOutputStream os = new FileOutputStream(myFile);
-        Iterator<Row> rowIterator = mySheet.iterator();
-        while (rowIterator.hasNext()) {
-            Row row = rowIterator.next();
-            Cell imsiCell = row.getCell(imsiRowNum);
-            Cell brandCell = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
-            brandCell.setCellValue(imsiMap.get(imsiCell.getStringCellValue()));
-        }
-		myWorkBook.write(os);
     }
 
     private String getImsiList(XSSFSheet mySheet) {
@@ -102,6 +82,22 @@ public class StartupService {
         myFile = new File(files[0].getName());
         FileInputStream fis = new FileInputStream(myFile);
         return new XSSFWorkbook(fis);
+    }
+
+    private void fillXLSX(XSSFWorkbook myWorkBook, List<Map<String, Object>> maps) throws IOException {
+        Map<String, String> imsiMap = new HashMap<>();
+        maps.forEach(x -> imsiMap.put(x.get("imsi").toString(), x.get("brand_cd").toString()));
+
+        File output = new File("output_" + myFile.getName());
+        FileOutputStream os = new FileOutputStream(output);
+        Iterator<Row> rowIterator = mySheet.iterator();
+        while (rowIterator.hasNext()) {
+            Row row = rowIterator.next();
+            Cell imsiCell = row.getCell(imsiRowNum);
+            Cell brandCell = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
+            brandCell.setCellValue(imsiMap.get(imsiCell.getStringCellValue()));
+        }
+        myWorkBook.write(os);
     }
 
 }
