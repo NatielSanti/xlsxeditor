@@ -4,7 +4,6 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -14,11 +13,11 @@ import java.util.*;
 @Component
 public class StartupService {
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     private File myFile;
     private XSSFSheet mySheet;
+    int imsiRowNum = 0;
 
     private static final String SCRIPT =
             "select imsi, brand_cd from h_schema.device_mst where imsi in (%s) " +
@@ -26,18 +25,24 @@ public class StartupService {
             "select imsi, brand_cd from k_schema.device_mst where imsi in (%s) " +
             "UNION all " +
             "select imsi, brand_cd from g_schema.device_mst where imsi in (%s)";
-    int imsiRowNum = 0;
+
+    public StartupService(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     public void start() throws IOException {
-        System.out.println(" Application START !!!!!!!!!!!!!!");
+        System.out.println("Application START !!!!!!!!!!!!!!");
         XSSFWorkbook myWorkBook = getXssfSheets();
 
-        mySheet = myWorkBook.getSheet("Data");
-        String imsiList = getImsiList(mySheet);
+        if(myWorkBook != null){
+            mySheet = myWorkBook.getSheet("Data");
+            String imsiList = getImsiList(mySheet);
 
-        List<Map<String, Object>> maps = jdbcTemplate.queryForList(String.format(SCRIPT, imsiList, imsiList, imsiList));
+            List<Map<String, Object>> maps = jdbcTemplate.queryForList(String.format(SCRIPT, imsiList, imsiList, imsiList));
 
-        fillXLSX(myWorkBook, maps);
+            fillXLSX(myWorkBook, maps);
+        }
+
         System.out.println("Application FINISH !!!!!!!!!");
     }
 
@@ -82,7 +87,19 @@ public class StartupService {
     }
 
     private XSSFWorkbook getXssfSheets() throws IOException {
-        myFile = new File("C:\\NATI\\projects\\xlsxeditor\\src\\main\\resources\\input.xlsx");
+        File f = new File("./");
+        FilenameFilter filter = new FilenameFilter() {
+            @Override
+            public boolean accept(File f, String name) {
+                return name.endsWith(".xlsx");
+            }
+        };
+        File[] files = f.listFiles(filter);
+        if(files.length != 1){
+            System.out.println("You should delete other .xlsx files");
+            return null;
+        }
+        myFile = new File(files[0].getName());
         FileInputStream fis = new FileInputStream(myFile);
         return new XSSFWorkbook(fis);
     }
