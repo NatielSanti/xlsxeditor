@@ -29,6 +29,8 @@ dependencies {
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	compile 'org.apache.poi:poi:3.11-beta2'
+	compile 'org.apache.poi:poi-ooxml:3.11-beta2'
 }
 
 test {
