@@ -12,7 +12,7 @@ public class XlsxeditorApplication {
 	public static void main(String[] args) throws IOException {
 		ConfigurableApplicationContext context  = SpringApplication.run(XlsxeditorApplication.class, args);
 		StartupService service = context.getBean(StartupService.class);
-		service.start();
+		service.start(args.length == 1 ? args[0] : "");
 		context.close();
 	}
 

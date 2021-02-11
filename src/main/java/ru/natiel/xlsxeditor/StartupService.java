@@ -9,9 +9,13 @@ import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Component
 public class StartupService {
+    private static final Logger LOGGER =
+            Logger.getLogger(StartupService.class.getName());
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -30,8 +34,8 @@ public class StartupService {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public void start() throws IOException {
-        XSSFWorkbook myWorkBook = getXssfSheets();
+    public void start(String fileName) throws IOException {
+        XSSFWorkbook myWorkBook = getXssfSheets(fileName);
 
         if(myWorkBook != null){
             mySheet = myWorkBook.getSheet("Data");
@@ -66,20 +70,23 @@ public class StartupService {
         return result.toString();
     }
 
-    private XSSFWorkbook getXssfSheets() throws IOException {
-        File f = new File("./");
-        FilenameFilter filter = new FilenameFilter() {
-            @Override
-            public boolean accept(File f, String name) {
-                return name.endsWith(".xlsx");
+    private XSSFWorkbook getXssfSheets(String fileName) throws IOException {
+        if(fileName.isEmpty()){
+            File f = new File("./");
+            FilenameFilter filter = new FilenameFilter() {
+                @Override
+                public boolean accept(File f, String name) {
+                    return name.endsWith(".xlsx");
+                }
+            };
+            File[] files = f.listFiles(filter);
+            if(files.length != 1){
+                LOGGER.log(Level.WARNING, "You should delete other .xlsx files");
+                return null;
             }
-        };
-        File[] files = f.listFiles(filter);
-        if(files.length != 1){
-            System.out.println("You should delete other .xlsx files");
-            return null;
+            fileName = files[0].getName();
         }
-        myFile = new File(files[0].getName());
+        myFile = new File(fileName);
         FileInputStream fis = new FileInputStream(myFile);
         return new XSSFWorkbook(fis);
     }
