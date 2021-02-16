@@ -1,14 +1,18 @@
 spring:
   application:
     name: xlsxeditor
-  jpa:
-    database: postgresql
-    database-platform: org.hibernate.dialect.PostgreSQL95Dialect
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    url: "jdbc:postgresql://10.107.19.21:5444/ccs_core"
-    username: "ccs_core_user"
-    password: "Ccspdb2019!"
 server:
-  port: 8081
-
+  port: 8080
+app:
+  prod:
+    datasource:
+      driver-class-name: org.postgresql.Driver
+      jdbcUrl: "jdbc:postgresql://10.107.19.21:5444/ccs_core"
+      username: "ccs_core_user"
+      password: "Ccspdb2019!"
+  stage:
+    datasource:
+      driver-class-name: org.postgresql.Driver
+      jdbcUrl: "jdbc:postgresql://10.107.26.71:5444/ccs_core"
+      username: "ccs_core_user"
+      password: "Ccspdb2019!"

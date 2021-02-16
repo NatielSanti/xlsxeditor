@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'ru.natiel'
-version = '0.0.2'
+version = '0.0.3'
 sourceCompatibility = '1.8'
 
 configurations {
@@ -19,16 +19,9 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
 	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'org.postgresql:postgresql'
-	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	compile 'org.apache.poi:poi:3.11-beta2'
 	compile 'org.apache.poi:poi-ooxml:3.11-beta2'
 }
