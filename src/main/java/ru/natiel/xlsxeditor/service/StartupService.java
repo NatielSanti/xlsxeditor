@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import ru.natiel.xlsxeditor.constants.SourceENUM;
 
 import java.io.*;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -82,6 +83,7 @@ public class StartupService {
     private String getImsiList(XSSFSheet mySheet) {
         StringBuilder result = new StringBuilder();
         Iterator<Row> rowIterator = mySheet.iterator();
+        boolean isFirst = true;
         while (rowIterator.hasNext()) {
             Row row = rowIterator.next();
             if(row.getRowNum() == 0){
@@ -94,14 +96,29 @@ public class StartupService {
                 }
             }
             Cell cell = row.getCell(imsiRowNum);
-            int cellType = cell.getCellType();
-            String cellValue = cellType == 1 ?
-                    cell.getStringCellValue() : Double.toString(cell.getNumericCellValue());
-            result.append("\'").append(cellValue).append("\'");
-            if(rowIterator.hasNext())
-                result.append(",");
+            if(cell != null){
+                if(isFirst)
+                    isFirst = false;
+                else
+                    result.append(",");
+                String cellValue = getString(cell);
+                result.append("\'").append(cellValue).append("\'");
+            }
         }
         return result.toString();
+    }
+
+    private String getString(Cell cell) {
+        int cellType = cell.getCellType();
+        String cellValue = "";
+        if(cellType == 0){
+            double numericCellValue = cell.getNumericCellValue();
+            DecimalFormat decimalFormat = new DecimalFormat("###0");
+            cellValue = decimalFormat.format(numericCellValue);
+        } else if(cellType == 1){
+            cellValue = cell.getStringCellValue();
+        }
+        return cellValue;
     }
 
     private Map<String, String> getInvoiceList() throws IOException {
@@ -115,11 +132,8 @@ public class StartupService {
             LOGGER.log(Level.WARNING, "You should delete other .xlsx files");
             return null;
         }
-        File invoiceFile = files[0];
-        FileInputStream fis = new FileInputStream(invoiceFile);
-//        FileInputStream fis = new FileInputStream("sim.xlsx");
-        XSSFWorkbook myWorkBook = new XSSFWorkbook(fis);
-        XSSFSheet invoiceSheet = myWorkBook.getSheet("VIN LIST");
+        XSSFSheet invoiceSheet = new XSSFWorkbook(new FileInputStream(files[0]))
+                .getSheet("VIN LIST");
 
         int imsiIndex = 0;
         int invoiceIndex = 0;
@@ -154,18 +168,27 @@ public class StartupService {
 
     private void fillCells(Map<String, String> mapStg, Map<String, String> mapPrd, Map<String, String> mapInvoice, XSSFCellStyle style) {
         Iterator<Row> rowIterator = mySheet.iterator();
+        String valueStg = "";
+        String valuePrd = "";
+        String invoiceValue = "";
+        String keyValue = "";
         while (rowIterator.hasNext()) {
             Row row = rowIterator.next();
             Cell imsiCell = row.getCell(imsiRowNum);
             Cell brandCellStg = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
             Cell brandCellPrd = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
             Cell invoiceCell = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
-            String valueStg = row.getRowNum() == 0?
-                    SourceENUM.STG.toString() : mapStg.get(imsiCell.getStringCellValue());
-            String valuePrd = row.getRowNum() == 0?
-                    SourceENUM.PRD.toString() : mapPrd.get(imsiCell.getStringCellValue());
-            String invoiceValue = row.getRowNum() == 0?
-                    SourceENUM.INVOICE.toString() : mapInvoice.get(imsiCell.getStringCellValue());
+
+            if(row.getRowNum() == 0){
+                valueStg = SourceENUM.STG.toString();
+                valuePrd = SourceENUM.PRD.toString();
+                invoiceValue = SourceENUM.INVOICE.toString();
+            } else if(imsiCell != null){
+                keyValue = getString(imsiCell);
+                valueStg = mapStg.get(keyValue);
+                valuePrd = mapPrd.get(keyValue);
+                invoiceValue = mapInvoice.get(keyValue);
+            }
 
             if (valueStg!= null && valuePrd!= null && !valueStg.equals(valuePrd)){
                 style.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
