@@ -45,7 +45,6 @@ public class StartupService {
 
     public void start(String fileName) throws IOException {
         XSSFWorkbook myWorkBook = getXssfSheets(fileName);
-
         if(myWorkBook != null){
             mySheet = myWorkBook.getSheet("Data");
             mySheet.setDefaultColumnWidth(10);
