@@ -1,7 +1,11 @@
 package ru.natiel.xlsxeditor.constants;
 
 public enum SourceENUM {
-    PRD,
-    STG,
-    INVOICE
+    PRDBRAND,
+    STGBRAND,
+    INVOICE,
+    PRDREQUESTCHANNEL,
+    STGREQUESTCHANNEL,
+    PRDCOSTCENTER,
+    STGCOSTCENTER
 }

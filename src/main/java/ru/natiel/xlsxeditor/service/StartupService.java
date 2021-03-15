@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import ru.natiel.xlsxeditor.constants.SourceENUM;
+import ru.natiel.xlsxeditor.dto.ImsiData;
 
 import java.io.*;
 import java.text.DecimalFormat;
@@ -31,11 +32,17 @@ public class StartupService {
     int imsiRowNum = 0;
 
     private static final String SCRIPT =
-            "select imsi, brand_cd from h_schema.device_mst where imsi in (%s) " +
-            "UNION all " +
-            "select imsi, brand_cd from k_schema.device_mst where imsi in (%s) " +
-            "UNION all " +
-            "select imsi, brand_cd from g_schema.device_mst where imsi in (%s)";
+            "select de.imsi, de.brand_cd, de.request_channel_cd, di.cost_center from h_schema.device_mst de \n" +
+            "JOIN h_schema.device_ifo di ON de.imei = di.imei\n" +
+            "where de.imsi in (%s)\n" +
+            "UNION all \n" +
+            "select de.imsi, de.brand_cd, de.request_channel_cd, di.cost_center from k_schema.device_mst de \n" +
+            "JOIN k_schema.device_ifo di ON de.imei = di.imei\n" +
+            "where de.imsi in (%s)\n" +
+            "UNION all \n" +
+            "select de.imsi, de.brand_cd, de.request_channel_cd, di.cost_center from g_schema.device_mst de \n" +
+            "JOIN g_schema.device_ifo di ON de.imei = di.imei\n" +
+            "where de.imsi in (%s)";
 
     public StartupService(@Qualifier("jdbcTemplatePrd") JdbcTemplate jdbcTemplatePrd,
                           @Qualifier("jdbcTemplateStg") JdbcTemplate jdbcTemplateStg) {
@@ -45,6 +52,7 @@ public class StartupService {
 
     public void start(String fileName) throws IOException {
         XSSFWorkbook myWorkBook = getXssfSheets(fileName);
+        LOGGER.log(Level.INFO, fileName);
         if(myWorkBook != null){
             mySheet = myWorkBook.getSheet("Data");
             mySheet.setDefaultColumnWidth(10);
@@ -63,15 +71,15 @@ public class StartupService {
     }
 
     private void fillPage(XSSFWorkbook myWorkBook) throws IOException {
-        Map<String, String> imsiMapStg = new HashMap<>();
-        Map<String, String> imsiMapPrd = new HashMap<>();
+        Map<String, ImsiData> imsiMapStg = new HashMap<>();
+        Map<String, ImsiData> imsiMapPrd = new HashMap<>();
         String imsiList = getImsiList(mySheet);
 
         List<Map<String, Object>> mapStg = jdbcTemplateStg.queryForList(String.format(SCRIPT, imsiList, imsiList, imsiList));
         List<Map<String, Object>> mapPrd = jdbcTemplatePrd.queryForList(String.format(SCRIPT, imsiList, imsiList, imsiList));
 
-        mapStg.forEach(x -> imsiMapStg.put(x.get("imsi").toString(), x.get("brand_cd").toString()));
-        mapPrd.forEach(x -> imsiMapPrd.put(x.get("imsi").toString(), x.get("brand_cd").toString()));
+        mapStg.forEach(x -> imsiMapStg.put(x.get("imsi").toString(), getFromSQLselect(x)));
+        mapPrd.forEach(x -> imsiMapPrd.put(x.get("imsi").toString(), getFromSQLselect(x)));
 
         File output = new File("output_" + myFile.getName());
         FileOutputStream os = new FileOutputStream(output);
@@ -165,10 +173,14 @@ public class StartupService {
         return result;
     }
 
-    private void fillCells(Map<String, String> mapStg, Map<String, String> mapPrd, Map<String, String> mapInvoice, XSSFCellStyle style) {
+    private void fillCells(Map<String, ImsiData> mapStg, Map<String, ImsiData> mapPrd, Map<String, String> mapInvoice, XSSFCellStyle style) {
         Iterator<Row> rowIterator = mySheet.iterator();
-        String valueStg = "";
-        String valuePrd = "";
+        String valueBrandStg = "";
+        String valueBrandPrd = "";
+        String valueChannelStg = "";
+        String valueChannelPrd = "";
+        String valueCostStg = "";
+        String valueCostPrd = "";
         String invoiceValue = "";
         String keyValue = "";
         while (rowIterator.hasNext()) {
@@ -176,29 +188,57 @@ public class StartupService {
             Cell imsiCell = row.getCell(imsiRowNum);
             Cell brandCellStg = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
             Cell brandCellPrd = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
+            Cell channelCellStg = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
+            Cell channelCellPrd = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
+            Cell costCellStg = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
+            Cell costCellPrd = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
             Cell invoiceCell = row.createCell(row.getLastCellNum(), Cell.CELL_TYPE_STRING);
-
             if(row.getRowNum() == 0){
-                valueStg = SourceENUM.STG.toString();
-                valuePrd = SourceENUM.PRD.toString();
-                invoiceValue = SourceENUM.INVOICE.toString();
+                valueBrandStg = SourceENUM.STGBRAND.name();
+                valueBrandPrd = SourceENUM.PRDBRAND.name();
+                invoiceValue = SourceENUM.INVOICE.name();
+                valueChannelStg = SourceENUM.STGREQUESTCHANNEL.name();
+                valueChannelPrd = SourceENUM.PRDREQUESTCHANNEL.name();
+                valueCostStg = SourceENUM.STGCOSTCENTER.name();
+                valueCostPrd = SourceENUM.PRDCOSTCENTER.name();
             } else if(imsiCell != null){
                 keyValue = getString(imsiCell);
-                valueStg = mapStg.get(keyValue);
-                valuePrd = mapPrd.get(keyValue);
+                ImsiData imsiDataStg = mapStg.get(keyValue);
+                ImsiData imsiDataPrd = mapPrd.get(keyValue);
+                if(imsiDataStg != null){
+                    valueBrandStg = imsiDataStg.getBrandCd();
+                    valueChannelStg = imsiDataStg.getRequestChannelCd();
+                    valueCostStg = imsiDataStg.getCostCenter();
+                }
+                if(imsiDataPrd != null){
+                    valueBrandPrd = imsiDataPrd.getBrandCd();
+                    valueChannelPrd = imsiDataPrd.getRequestChannelCd();
+                    valueCostPrd = imsiDataPrd.getCostCenter();
+                }
                 invoiceValue = mapInvoice.get(keyValue);
             }
 
-            if (valueStg!= null && valuePrd!= null && !valueStg.equals(valuePrd)){
+            if (valueBrandStg!= null && valueBrandPrd!= null && !valueBrandStg.equals(valueBrandPrd)){
                 style.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
                 style.setFillPattern(CellStyle.SOLID_FOREGROUND);
                 brandCellStg.setCellStyle(style);
                 brandCellPrd.setCellStyle(style);
             }
-            brandCellStg.setCellValue(valueStg);
-            brandCellPrd.setCellValue(valuePrd);
+            brandCellStg.setCellValue(valueBrandStg);
+            brandCellPrd.setCellValue(valueBrandPrd);
+            channelCellStg.setCellValue(valueChannelStg);
+            channelCellPrd.setCellValue(valueChannelPrd);
+            costCellStg.setCellValue(valueCostStg);
+            costCellPrd.setCellValue(valueCostPrd);
             invoiceCell.setCellValue(invoiceValue);
         }
+    }
+
+    private ImsiData getFromSQLselect(Map<String, Object> map){
+        String channel = map.get("request_channel_cd") == null ? "" : map.get("request_channel_cd").toString();
+        String cost = map.get("cost_center") == null ? "" : map.get("cost_center").toString();
+        String brand = map.get("brand_cd") == null ? "" : map.get("brand_cd").toString();
+        return new ImsiData(brand, channel, cost);
     }
 
 }
