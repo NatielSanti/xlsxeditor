@@ -137,7 +137,7 @@ public class StartupService {
         File[] files = dir.listFiles(filter);
         if(files!= null && files.length != 1){
             LOGGER.log(Level.WARNING, "You should delete other .xlsx files");
-            return null;
+            return new HashMap<>();
         }
         XSSFSheet invoiceSheet = new XSSFWorkbook(new FileInputStream(files[0]))
                 .getSheet("VIN LIST");
