@@ -30,14 +30,6 @@ public class StartupService {
     private File myFile;
     private XSSFSheet mySheet;
     int imsiRowNum = 0;
-    String valueBrandStg = "";
-    String valueBrandPrd = "";
-    String valueChannelStg = "";
-    String valueChannelPrd = "";
-    String valueCostStg = "";
-    String valueCostPrd = "";
-    String invoiceValue = "";
-    String keyValue = "";
 
     private static final String SCRIPT =
             "select de.imsi, de.brand_cd, de.request_channel_cd, di.cost_center from h_schema.device_mst de \n" +
@@ -183,7 +175,14 @@ public class StartupService {
 
     private void fillCells(Map<String, ImsiData> mapStg, Map<String, ImsiData> mapPrd, Map<String, String> mapInvoice, XSSFCellStyle style) {
         Iterator<Row> rowIterator = mySheet.iterator();
-
+        String valueBrandStg = "";
+        String valueBrandPrd = "";
+        String valueChannelStg = "";
+        String valueChannelPrd = "";
+        String valueCostStg = "";
+        String valueCostPrd = "";
+        String invoiceValue = "";
+        String keyValue = "";
         while (rowIterator.hasNext()) {
             Row row = rowIterator.next();
             Cell imsiCell = row.getCell(imsiRowNum);
@@ -229,7 +228,7 @@ public class StartupService {
                 }
             }
 
-            if (valueBrandStg!= null && valueBrandPrd!= null && !valueBrandStg.equals(valueBrandPrd)){
+            if (!valueBrandStg.equals("") && !valueBrandPrd.equals("") && !valueBrandStg.equals(valueBrandPrd)){
                 style.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
                 style.setFillPattern(CellStyle.SOLID_FOREGROUND);
                 brandCellStg.setCellStyle(style);
