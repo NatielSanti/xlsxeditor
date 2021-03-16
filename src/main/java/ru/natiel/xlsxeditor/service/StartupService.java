@@ -204,8 +204,6 @@ public class StartupService {
                 valueCostPrd = SourceENUM.PRDCOSTCENTER.name();
             } else if(imsiCell != null){
                 keyValue = getString(imsiCell);
-                if(keyValue.equals("204047128168560"))
-                    System.out.println("qwe");
                 if(!keyValue.equals("")) {
                     ImsiData imsiDataStg = mapStg.get(keyValue);
                     ImsiData imsiDataPrd = mapPrd.get(keyValue);
