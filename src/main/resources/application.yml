@@ -7,12 +7,12 @@ app:
   prod:
     datasource:
       driver-class-name: org.postgresql.Driver
-      jdbcUrl: "jdbc:postgresql://10.107.19.21:5444/ccs_core"
-      username: "ccs_core_user"
-      password: "Ccspdb2019!"
+      jdbcUrl: "jdbc:postgresql://10.10.10.10:5444/ccs_core"
+      username: "user"
+      password: "Ccs"
   stage:
     datasource:
       driver-class-name: org.postgresql.Driver
-      jdbcUrl: "jdbc:postgresql://10.107.26.71:5444/ccs_core"
-      username: "ccs_core_user"
-      password: "Ccspdb2019!"
+      jdbcUrl: "jdbc:postgresql://10.10.10.10:5444/ccs_core"
+      username: "ccs"
+      password: "Ccs"
